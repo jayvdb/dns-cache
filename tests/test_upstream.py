@@ -209,7 +209,10 @@ class TestCache(unittest.TestCase):
         resolver.flags = 0
 
         with self.assertRaises(NoAnswer):
-            resolver.query(name, MX, tcp=True)
+            try:
+                resolver.query(name, MX, tcp=True)
+            except (Timeout, NoNameservers):
+                raise unittest.SkipTest("Another DNS exception occurred")
 
         assert len(resolver.cache.data) == 0
 

@@ -65,17 +65,12 @@ The following classes can be used separately or together.
 **Note:** `dns_cache.override_system_resolver()` can be used to install a custom `resolver` or `cache`, which may
 be derived from the above classes or your own implementation from scratch.
 
-## TODO
-
-1. Support [`python-benedict`](https://github.com/fabiocaccamo/python-benedict)
-2. Use [`dnsbin`](https://github.com/ettic-team/dnsbin) for testing
-3. Add redis, memcached and cloud caching backends
-
 ## Similar projects
 
 Python:
 1. [`velocity`](https://github.com/s0md3v/velocity) is a lighter weight approach, with a [`serious bug`](https://github.com/s0md3v/velocity/issues/2)
 2. [`dnsplug`](https://github.com/nresare/dnsplug), unfortunately not available on PyPI.
 
-Go:
-1. [`dnscache`](https://github.com/rs/dnscache)
+Other:
+1. [`dnscache`](https://github.com/rs/dnscache) (Go)
+2. [`native-dns-cache`](https://github.com/tjfontaine/native-dns-cache) (Node)

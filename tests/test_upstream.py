@@ -131,7 +131,7 @@ class TestCache(unittest.TestCase):
 
         a_name = from_text(a)
 
-        assert name in names == set([name, a_name])
+        assert name in names >= set([name, a_name])
 
         with dnspython_resolver_socket_block():
             q2 = resolver.query(cname)

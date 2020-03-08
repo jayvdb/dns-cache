@@ -1,0 +1,15 @@
+environment:
+  matrix:
+    - TOXENV: py27-noapsw
+    - TOXENV: py34-noapsw
+    - TOXENV: py35-noapsw
+    - TOXENV: py36-noapsw
+    - TOXENV: py37-noapsw
+    - TOXENV: py38-noapsw
+install:
+  - pip install tox codecov
+build: false
+test_script:
+  - tox
+  - codecov
+skip_branch_with_pr: true

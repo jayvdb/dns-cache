@@ -66,8 +66,12 @@ class PickableLRUCacheBase(SelfPickle):
         self.lock = _threading.Lock()
         sentinel = odict["sentinel"] = LRUCacheNode(None, None)
         flattened_lru = odict["data"]
+        try:
+            flattened_lru = reversed(flattened_lru.items())
+        except TypeError:  # pragma: no cover
+            flattened_lru = flattened_lru.items()
         data = odict["data"] = {}
-        for key, value in reversed(flattened_lru.items()):
+        for key, value in flattened_lru:
             # TODO: make more efficient
             node = LRUCacheNode(key, value)
             node.link_after(sentinel)

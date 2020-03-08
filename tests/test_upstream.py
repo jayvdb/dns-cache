@@ -25,6 +25,7 @@ from dns.resolver import (
 from dns_cache.resolver import dnspython_resolver_socket_block
 
 NAMESERVER = os.getenv("NAMESERVER", "8.8.8.8")
+WINDOWS = sys.platform == "win32"
 
 
 def compare_response(a, b):
@@ -144,6 +145,11 @@ class TestCache(unittest.TestCase):
             ip = socket.gethostbyname(cname)
 
         assert ip == "46.101.245.76"
+
+        # override_system_resolver is broken on Windows
+        # https://github.com/rthalley/dnspython/issues/416
+        if WINDOWS:
+            return
 
         with self.assertRaises(socket.gaierror):
             with dnspython_resolver_socket_block():

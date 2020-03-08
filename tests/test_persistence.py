@@ -108,19 +108,27 @@ class TestPickling(unittest.TestCase):
             assert filename.endswith(".stash")
 
         if filename:
+            remove_failed = False
             if required:
                 assert os.path.exists(filename)
             if os.path.exists(filename):
-                os.remove(filename)
-            if required:
+                try:
+                    os.remove(filename)
+                except OSError:
+                    remove_failed = True
+            if required and not remove_failed:
                 assert not os.path.exists(filename)
 
         if directory:
+            remove_failed = False
             if required:
                 assert os.path.exists(directory)
             if os.path.exists(directory):
-                shutil.rmtree(directory)
-            if required:
+                try:
+                    shutil.rmtree(directory)
+                except OSError:
+                    remove_failed = True
+            if required and not remove_failed:
                 assert not os.path.exists(directory)
 
     def test_empty_cache(self):

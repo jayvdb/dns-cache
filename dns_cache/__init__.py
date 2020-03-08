@@ -10,7 +10,7 @@ from .expiration import FIVE_MINS, MinExpirationCache, NoExpirationCache
 from .pickle import PickableCache
 from .resolver import AggressiveCachingResolver, ExceptionCachingResolver
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 class Resolver(AggressiveCachingResolver, ExceptionCachingResolver):

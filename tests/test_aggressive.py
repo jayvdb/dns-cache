@@ -52,15 +52,14 @@ class TestCache(TestCache):
 
         assert q2 is q1
 
-        assert (a_name, A, IN) in resolver.cache.data
-        assert (name, CNAME, IN) in resolver.cache.data
-
         with dnspython_resolver_socket_block():
             ip = socket.gethostbyname(cname)
 
         assert ip == "46.101.245.76"
 
-        with dnspython_resolver_socket_block():
-            ip = socket.gethostbyname(a)
+        # Sometimes the response includes solar.coala.io
+        if (a_name, A, IN) in resolver.cache.data:
+            with dnspython_resolver_socket_block():
+                ip = socket.gethostbyname(a)
 
-        assert ip == "46.101.245.76"
+            assert ip == "46.101.245.76"

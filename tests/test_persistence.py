@@ -10,6 +10,11 @@ from dns.name import from_text
 from dns.rdataclass import IN
 from dns.rdatatype import A
 
+try:
+    import apsw
+except ImportError:
+    apsw = None
+
 from dns_cache.diskcache import DiskCache, DiskLRUCache
 from dns_cache.pickle import PickableCache, PickableCacheBase, PickableLRUCache
 from dns_cache.sqlitedict import SqliteDictCache, SqliteDictLRUCache
@@ -238,20 +243,21 @@ class TestLRUStashJsonPickle(TestStashMemory):
     }
 
 
-class TestStashPickleApsw(TestStashMemory):
+if apsw:
 
-    kwargs = {
-        "archive": "apsw:///pickle.stash?table=dns",
-        "serializer": "pickle:///?protocol=4",
-    }
+    class TestStashPickleApsw(TestStashMemory):
 
+        kwargs = {
+            "archive": "apsw:///pickle.stash?table=dns",
+            "serializer": "pickle:///?protocol=4",
+        }
 
-class TestStashJsonPickleApsw(TestStashMemory):
+    class TestStashJsonPickleApsw(TestStashMemory):
 
-    kwargs = {
-        "archive": "apsw:///jsonpickle.stash?table=dns",
-        "serializer": "jsonpickle:///",
-    }
+        kwargs = {
+            "archive": "apsw:///jsonpickle.stash?table=dns",
+            "serializer": "jsonpickle:///",
+        }
 
 
 class TestStashJsonPickleArchive(TestStashMemory):

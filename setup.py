@@ -30,6 +30,7 @@ setup(
     description="DNS lookup cache for Python using dnspython",
     license="MIT",
     author_email="jayvdb@gmail.com",
+    url='https://github.com/jayvdb/dns-cache',
     packages=find_packages(exclude=["tests", "tests.*"]),
     python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
     install_requires=[

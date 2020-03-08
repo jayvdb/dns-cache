@@ -46,7 +46,7 @@ class TestCache(TestCache):
 
         assert q2.__dict__ == q1.__dict__
 
-        with freeze_time(datetime.timedelta(seconds=self.expiration)):
+        with freeze_time(datetime.timedelta(seconds=self.expiration + 1)):
             assert not resolver.cache.get((name, A, IN))
 
         # LRU cache purges expired records in .get()

@@ -99,12 +99,12 @@ class TestCache(unittest.TestCase):
 
         assert q2 is q1
 
+        now = time.time()
+        assert q1.expiration < now + self.expiration + 1
+
         with dnspython_resolver_socket_block():
             ip = socket.gethostbyname(valid_name)
             assert ip
-
-        now = time.time()
-        assert q1.expiration < now + self.expiration
 
     def test_hit_cname(self):
         cname = "www.coala.io"

@@ -1,11 +1,10 @@
 # Test generated files
 
-dns.pickle
-dns-lru.pickle
-jsonpickle.stash
-pickle.stash
-dns.sqlite
+*.pickle
+*.stash
+*.sqlite
 disk-cache-dir
+disk-cache-lru-dir
 diskdict-cache-dir
 
 # Byte-compiled / optimized / DLL files

@@ -104,7 +104,8 @@ class TestPickling(unittest.TestCase):
             if end == -1:
                 end = len(archive)
             filename = archive[start:end]
-            assert filename == "jsonpickle.stash"
+            assert filename.startswith("jsonpickle")
+            assert filename.endswith(".stash")
 
         if filename:
             if required:
@@ -157,7 +158,7 @@ class TestPickling(unittest.TestCase):
 
         self.remove_cache()
 
-    def test_basic(self):
+    def test_reload(self):
         self.remove_cache(required=False)
         resolver = self.get_test_resolver()
         using_memory = self.kwargs.get("archive", "") == "memory:///"
@@ -204,7 +205,7 @@ class TestStashMemory(TestPickling):
 class TestStashPickle3(TestStashMemory):
 
     kwargs = {
-        "filename": os.path.abspath("pickle.stash"),
+        "filename": os.path.abspath("pickle3.stash"),
         "serializer": "pickle:///?protocol=3",
     }
 
@@ -213,7 +214,7 @@ class TestLRUStashPickle3(TestStashMemory):
 
     cache_cls = StashLRUCache
     kwargs = {
-        "filename": os.path.abspath("pickle.stash"),
+        "filename": os.path.abspath("pickle3-lru.stash"),
         "serializer": "pickle:///?protocol=3",
     }
 
@@ -221,7 +222,7 @@ class TestLRUStashPickle3(TestStashMemory):
 class TestStashPickle4(TestStashMemory):
 
     kwargs = {
-        "filename": os.path.abspath("pickle.stash"),
+        "filename": os.path.abspath("pickle4.stash"),
         "serializer": "pickle:///?protocol=4",
     }
 
@@ -238,7 +239,7 @@ class TestLRUStashJsonPickle(TestStashMemory):
 
     cache_cls = StashLRUCache
     kwargs = {
-        "filename": os.path.abspath("jsonpickle.stash"),
+        "filename": os.path.abspath("jsonpickle-lru.stash"),
         "serializer": "jsonpickle:///",
     }
 
@@ -248,27 +249,27 @@ if apsw:
     class TestStashPickleApsw(TestStashMemory):
 
         kwargs = {
-            "archive": "apsw:///pickle.stash?table=dns",
+            "archive": "apsw:///pickle-apsw.stash?table=dns",
             "serializer": "pickle:///?protocol=4",
         }
 
     class TestStashJsonPickleApsw(TestStashMemory):
 
         kwargs = {
-            "archive": "apsw:///jsonpickle.stash?table=dns",
+            "archive": "apsw:///jsonpickle-apsw.stash?table=dns",
             "serializer": "jsonpickle:///",
         }
 
 
 class TestStashJsonPickleArchive(TestStashMemory):
 
-    kwargs = {"archive": "sqlite:///jsonpickle.stash", "serializer": "jsonpickle:///"}
+    kwargs = {"archive": "sqlite:///jsonpickle-archive.stash", "serializer": "jsonpickle:///"}
 
 
 class TestStashJsonPickleTablename(TestStashMemory):
 
     kwargs = {
-        "archive": "sqlite:///jsonpickle.stash?table=dns",
+        "archive": "sqlite:///jsonpickle-table.stash?table=dns",
         "serializer": "jsonpickle:///",
     }
 
@@ -282,7 +283,7 @@ class TestSqliteDict(TestPickling):
 class TestLRUSqliteDict(TestPickling):
 
     cache_cls = SqliteDictLRUCache
-    kwargs = {"filename": os.path.abspath("dns.sqlite")}
+    kwargs = {"filename": os.path.abspath("dns-lru.sqlite")}
 
 
 class TestDiskCache(TestPickling):
@@ -294,7 +295,7 @@ class TestDiskCache(TestPickling):
 class TestLRUDiskCache(TestPickling):
 
     cache_cls = DiskLRUCache
-    kwargs = {"directory": os.path.abspath("disk-cache-dir")}
+    kwargs = {"directory": os.path.abspath("disk-cache-lru-dir")}
 
 
 if DiskDictCache:

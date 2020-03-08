@@ -1,3 +1,13 @@
+# Test generated files
+
+dns.pickle
+dns-lru.pickle
+jsonpickle.stash
+pickle.stash
+dns.sqlite
+disk-cache-dir
+diskdict-cache-dir
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

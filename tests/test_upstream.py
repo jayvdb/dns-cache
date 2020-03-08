@@ -154,11 +154,8 @@ class TestCache(unittest.TestCase):
 
     def test_no_nameservers(self):
         name = "al.fr."
-        # timeout_name = 'hi.my.'
-        # timeout_name = 'www.mandrivalinux.com'
-        # timeout_name = 'www.myopenid.com'
-        # timeout_name = 'd.cd.'
-        # timeout_name = 'al.fr'
+        # Other examples which trigger this are
+        # 'hi.my.', 'www.mandrivalinux.com', 'www.myopenid.com', 'd.cd.' and 'al.fr'
 
         resolver = self.get_test_resolver()
 

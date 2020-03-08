@@ -1,0 +1,33 @@
+# codecov-python has no Cirrus CI support
+# https://github.com/codecov/codecov-python/issues/233
+env:
+  LC_ALL: C.UTF-8
+  LANG: C.UTF-8
+  CODECOV_TOKEN: ENCRYPTED[a503f46aff63363c21705c0ad429c4f6fc8dd64252a192c2baaf4f5f79ef9f5168e95aa457a0bd15a968db034d20c106]
+
+Linux_task:
+  container:
+    matrix:
+      - image: python:2.7
+      - image: python:3.5
+      - image: python:3.6
+      - image: python:3.7
+      - image: python:3.8
+  install_script:
+    - pip install -U tox coverage
+  script:
+    - python --version
+    - PY=$(python -c 'import sys; print("%d%d" % (sys.version_info[0], sys.version_info[1]))')
+    - python -m tox -e py$PY
+    - bash <(curl -s https://codecov.io/bash)
+
+macOS_task:
+  osx_instance:
+    image: mojave-base
+  install_script:
+    - brew install python3
+    - pip3 install -U tox coverage
+  script:
+    - python3 --version
+    - python3 -m tox -e py
+    - bash <(curl -s https://codecov.io/bash)

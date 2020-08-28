@@ -1,5 +1,4 @@
 import time
-from contextlib import contextmanager
 
 from dns.exception import DNSException
 from dns.name import from_text
@@ -8,6 +7,8 @@ from dns.rdatatype import A
 from dns.resolver import NXDOMAIN, Answer, Resolver
 
 import dns_cache.expiration
+
+from .block import dnspython_resolver_socket_block
 
 try:
     from types import StringTypes
@@ -19,22 +20,6 @@ def _get_dnspython_version():
     from dns.version import MAJOR, MINOR
 
     return (MAJOR, MINOR)
-
-
-def _socket_factory_blocker(*args, **kwargs):
-    raise AssertionError("_socket_factory_blocker invoked")
-
-
-@contextmanager
-def dnspython_resolver_socket_block():
-    import dns.resolver
-
-    real_query_socket_factory = dns.resolver.dns.query.socket_factory
-    dns.resolver.dns.query.socket_factory = _socket_factory_blocker
-    try:
-        yield
-    finally:
-        dns.resolver.dns.query.socket_factory = real_query_socket_factory
 
 
 class AggressiveCachingResolver(Resolver):

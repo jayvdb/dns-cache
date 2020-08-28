@@ -94,18 +94,19 @@ class TestPickling(unittest.TestCase):
         directory = self.kwargs.get("directory", None)
         using_json_pickle = self.is_jsonpickle()
         archive = self.kwargs.get("archive", None)
-        if using_json_pickle and archive:
-            if archive.startswith("sqlite:///"):
-                start = len("sqlite:///")
-            else:
-                start = len("apsw:///")
 
+        if archive:
+            start = archive.find(":///") + 4
             end = archive.find("?")
             if end == -1:
                 end = len(archive)
             filename = archive[start:end]
-            assert filename.startswith("jsonpickle")
-            assert filename.endswith(".stash")
+            if using_json_pickle:
+                assert filename.startswith("jsonpickle")
+            if archive.startswith("memory:///"):
+                assert not filename
+            else:
+                assert filename.endswith(".stash")
 
         if filename:
             remove_failed = False
@@ -271,7 +272,10 @@ if apsw:
 
 class TestStashJsonPickleArchive(TestStashMemory):
 
-    kwargs = {"archive": "sqlite:///jsonpickle-archive.stash", "serializer": "jsonpickle:///"}
+    kwargs = {
+        "archive": "sqlite:///jsonpickle-archive.stash",
+        "serializer": "jsonpickle:///",
+    }
 
 
 class TestStashJsonPickleTablename(TestStashMemory):

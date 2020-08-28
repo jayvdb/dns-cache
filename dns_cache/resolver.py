@@ -41,6 +41,8 @@ class AggressiveCachingResolver(Resolver):
 
 class NXAnswer(Answer):
     def __init__(self, *args, **kwargs):
+        if _get_dnspython_version() >= (2, 0):  # pragma: nocover
+            kwargs.pop("raise_on_no_answer")
         super(NXAnswer, self).__init__(*args, **kwargs)
         self.expiration += dns_cache.expiration.MIN_TTL
 

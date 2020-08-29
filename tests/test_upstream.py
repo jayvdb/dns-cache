@@ -97,6 +97,16 @@ class TestCache(unittest.TestCase):
 
         return resolver
 
+    def _flush_cache(self, resolver):
+        if DNSPYTHON_2:
+            resolver.cache.flush()
+            return
+
+        # Avoid a bug in LRUCache on dnspython < 2
+        if len(resolver.cache.data):
+            for key in list(resolver.cache.data):
+                resolver.cache.flush(key)
+
     def test_hit_a(self):
         valid_name = "api.github.com"
 
@@ -179,12 +189,13 @@ class TestCache(unittest.TestCase):
         ip = socket.gethostbyname(a)
         assert ip == "46.101.245.76"
 
-    def test_no_nameservers(self):
+    def test_no_nameservers(self, expected_extra=0):
         name = "al.fr."
         # Other examples which trigger this are
         # 'hi.my.', 'www.mandrivalinux.com', 'www.myopenid.com', 'd.cd.' and 'al.fr'
 
         resolver = self.get_test_resolver()
+        resolver.lifetime = 5
 
         if DNSPYTHON_2:
             query = resolver.resolve
@@ -198,7 +209,7 @@ class TestCache(unittest.TestCase):
         except NoNameservers:
             pass
 
-        assert len(resolver.cache.data) == 0
+        assert len(resolver.cache.data) == expected_extra
 
         try:
             query(name, tcp=True)
@@ -207,7 +218,9 @@ class TestCache(unittest.TestCase):
         except NoNameservers:
             pass
 
-        assert len(resolver.cache.data) == 0
+        assert len(resolver.cache.data) == expected_extra
+
+        return resolver
 
     def test_syntax_error(self):
         name = ".ekit.com"
@@ -224,8 +237,10 @@ class TestCache(unittest.TestCase):
 
         assert len(resolver.cache.data) == 0
 
-    def test_nxdomain(self):
+    def test_nxdomain(self, expected_extra=0):
         missing_name = "invalid.invalid."
+
+        expected_cache_count = expected_extra + (1 if DNSPYTHON_2 else 0)
 
         resolver = self.get_test_resolver()
 
@@ -241,20 +256,24 @@ class TestCache(unittest.TestCase):
         else:
             raise unittest.SkipTest('DNS hijacked')
 
-        assert len(resolver.cache.data) == 0
-
         with self.assertRaises(NXDOMAIN):
             query(missing_name)
 
-        assert len(resolver.cache.data) == 0
+        assert len(resolver.cache.data) == expected_cache_count
+
+        self._flush_cache(resolver)
 
         with self.assertRaises(NXDOMAIN):
             query(missing_name, tcp=True)
 
-        assert len(resolver.cache.data) == 0
+        assert len(resolver.cache.data) == expected_cache_count
 
-    def test_no_answer(self):
+        return resolver
+
+    def test_no_answer(self, expected_extra=0):
         name = "www.google.com"
+
+        expected_cache_count = expected_extra + (1 if DNSPYTHON_2 else 0)
 
         resolver = self.get_test_resolver()
         resolver.flags = 0
@@ -270,7 +289,9 @@ class TestCache(unittest.TestCase):
             except (Timeout, NoNameservers):
                 raise unittest.SkipTest("Another DNS exception occurred")
 
-        assert len(resolver.cache.data) == 0
+        assert len(resolver.cache.data) == expected_cache_count
+
+        return resolver
 
 
 class TestLRUCache(TestCache):

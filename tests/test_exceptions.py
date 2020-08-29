@@ -1,7 +1,7 @@
 """Tests for caching exceptions."""
 from dns.name import from_text
 from dns.rdataclass import IN
-from dns.rdatatype import MX, A
+from dns.rdatatype import A, ANY, MX
 from dns.resolver import (
     NXDOMAIN,
     Cache,
@@ -31,17 +31,15 @@ class TestCache(TestCache):
     def test_no_nameservers(self):
         name = "al.fr."
 
-        resolver = self.get_test_resolver()
+        resolver = super(TestCache, self).test_no_nameservers(expected_extra=1)
 
         if DNSPYTHON_2:
             query = resolver.resolve
         else:
             query = resolver.query
 
-        with self.assertRaises(NoNameservers):
-            query(name)
-
-        assert len(resolver.cache.data) == 1
+        resolver.lifetime = 1
+        # Cache seed-ed by super class.
 
         with dnspython_resolver_socket_block():
             with self.assertRaises(NoNameservers):
@@ -50,7 +48,15 @@ class TestCache(TestCache):
     def test_nxdomain(self):
         missing_name = "invalid.invalid."
 
-        resolver = self.get_test_resolver()
+        resolver = super(TestCache, self).test_nxdomain(expected_extra=1)
+        expected_cache_count = 2 if DNSPYTHON_2 else 1
+
+        name = from_text(missing_name)
+
+        # Remove the core dnspython2 cache entry, which does not re-appear
+        # below because the remainder of query use the dns-cache cache entry.
+        if DNSPYTHON_2 and (name, ANY, IN) in resolver.cache.data:
+            del resolver.cache.data[(name, ANY, IN)]
 
         if DNSPYTHON_2:
             query = resolver.resolve
@@ -68,7 +74,6 @@ class TestCache(TestCache):
 
         assert len(resolver.cache.data) == 1
 
-        name = from_text(missing_name)
         assert (name, A, IN) in resolver.cache.data
 
         entry = resolver.cache.data[(name, A, IN)]
@@ -104,18 +109,16 @@ class TestCache(TestCache):
     def test_no_answer(self):
         name = "www.google.com"
 
-        resolver = self.get_test_resolver()
-        resolver.flags = 0
+        resolver = super(TestCache, self).test_no_answer(
+            expected_extra=0 if DNSPYTHON_2 else 1)
+
+        resolver.lifetime = 1
+        # Cache seed-ed by super class.
 
         if DNSPYTHON_2:
             query = resolver.resolve
         else:
             query = resolver.query
-
-        with self.assertRaises(NoAnswer):
-            query(name, MX, tcp=True)
-
-        assert len(resolver.cache.data) == 1
 
         with dnspython_resolver_socket_block():
             with self.assertRaises(NoAnswer):

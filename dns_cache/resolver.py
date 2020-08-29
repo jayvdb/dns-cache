@@ -5,6 +5,7 @@ from dns.name import from_text
 from dns.rdataclass import IN
 from dns.rdatatype import A
 from dns.resolver import NXDOMAIN, Answer, Resolver
+from dns.version import MAJOR as _MAJOR, MINOR as _MINOR
 
 import dns_cache.expiration
 
@@ -15,11 +16,11 @@ try:
 except ImportError:  # pragma: no cover
     StringTypes = tuple([str])
 
+DNSPYTHON_2 = (_MAJOR, _MINOR) >= (2, 0)
+
 
 def _get_dnspython_version():
-    from dns.version import MAJOR, MINOR
-
-    return (MAJOR, MINOR)
+    return (_MAJOR, _MINOR)
 
 
 class AggressiveCachingResolver(Resolver):

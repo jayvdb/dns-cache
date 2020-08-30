@@ -9,7 +9,7 @@ from dns.exception import SyntaxError as DNSSyntaxError
 from dns.exception import Timeout
 from dns.name import from_text
 from dns.rdataclass import IN
-from dns.rdatatype import A, ANY, MX
+from dns.rdatatype import A, ANY, MX, NS
 from dns.resolver import (
     NXDOMAIN,
     Answer,
@@ -193,6 +193,72 @@ class TestCache(unittest.TestCase):
 
         ip = socket.gethostbyname(a)
         assert ip == "46.101.245.76"
+
+    def test_hit_authority(self, aggressive=False):
+        name = "a.gtld-servers.net."
+
+        resolver = self.get_test_resolver()
+
+        q1 = resolver.query(name, A)
+
+        if aggressive:
+            assert len(resolver.cache.data) >= 1
+        else:
+            assert len(resolver.cache.data) == 1
+
+        name = from_text(name)
+        assert (name, A, IN) in resolver.cache.data
+        assert resolver.cache.get((name, A, IN))
+
+        entry = resolver.cache.data[(name, A, IN)]
+
+        if isinstance(entry, LRUCacheNode):
+            answer = entry.value
+        else:
+            answer = entry
+
+        assert answer == q1
+
+        rrsets = answer.response.answer
+        assert rrsets
+        assert len(rrsets) == 1
+
+        names = set([rrset.name for rrset in rrsets])
+
+        assert len(names) == 1
+
+        if not answer.response.authority:
+            raise unittest.SkipTest('no authority data')
+
+        assert len(answer.response.authority) == 1
+        assert not answer.response.additional
+
+        rrsets = answer.response.authority
+
+        assert rrsets
+        assert len(rrsets) == 1
+
+        authority_names = sorted(set([
+            rrset.name for rrset in rrsets
+            if rrset.rdtype == NS and rrset.rdclass == IN
+        ]))
+
+        with dnspython_resolver_socket_block():
+            q2 = resolver.query(name, A)
+
+        if aggressive:
+            assert len(resolver.cache.data) >= 1
+        else:
+            assert len(resolver.cache.data) == 1
+
+        assert q2 is q1
+
+        if aggressive:
+            return resolver, authority_names
+
+        with self.assertRaises(_SocketBlockedError):
+            with dnspython_resolver_socket_block():
+                resolver.query(authority_names[0], NS)
 
     def test_no_nameservers(self, expected_extra=0):
         name = "al.fr."

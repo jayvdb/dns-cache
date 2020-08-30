@@ -3,7 +3,7 @@ import socket
 
 from dns.name import from_text
 from dns.rdataclass import IN
-from dns.rdatatype import CNAME, A
+from dns.rdatatype import A, CNAME, NS
 from dns.resolver import Cache, LRUCacheNode
 
 from dns_cache.resolver import AggressiveCachingResolver
@@ -68,3 +68,23 @@ class TestCache(TestCache):
                 ip = socket.gethostbyname(a)
 
             assert ip == "46.101.245.76"
+
+    def test_hit_additional(self):
+        resolver, additional_a_names = super(TestCache, self).test_hit_additional(
+            aggressive=True)
+
+        with dnspython_resolver_socket_block():
+            answer = resolver.query(additional_a_names[0], A)
+            assert answer
+
+        with dnspython_resolver_socket_block():
+            ip = socket.gethostbyname(additional_a_names[0])
+            assert ip
+
+    def test_hit_authority(self):
+        resolver, authority_names = super(TestCache, self).test_hit_authority(
+            aggressive=True)
+
+        with dnspython_resolver_socket_block():
+            answer = resolver.query(authority_names[0], NS)
+            assert answer

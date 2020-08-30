@@ -19,9 +19,13 @@ from dns_cache.diskcache import DiskCache, DiskLRUCache
 from dns_cache.pickle import PickableCache, PickableCacheBase, PickableLRUCache
 from dns_cache.sqlitedict import SqliteDictCache, SqliteDictLRUCache
 from dns_cache.stash import StashCache, StashLRUCache
-from dns_cache.resolver import dnspython_resolver_socket_block
 
-from tests.test_upstream import compare_response, get_test_resolver
+from tests.test_upstream import (
+    compare_response,
+    DNSPYTHON_2,
+    dnspython_resolver_socket_block,
+    get_test_resolver,
+)
 
 try:
     # Python 3 backport to Python 2.7
@@ -38,17 +42,23 @@ PY2 = sys.version_info[0] == 2
 
 
 def seed_cache(resolver):
-    q1 = resolver.query("github.com.")
+    if DNSPYTHON_2:
+        query = resolver.resolve
+    else:
+        query = resolver.query
+
+    q1 = query("github.com.")
     assert len(resolver.cache.data) > 0
 
-    q2 = resolver.query("bitbucket.org.")
+    q2 = query("bitbucket.org.")
+
     assert len(resolver.cache.data) > 1
     assert q2 != q1
 
     name = from_text("github.com.")
     assert resolver.cache.get((name, A, IN))
 
-    q2 = resolver.query("github.com.")
+    q2 = query("github.com.")
     assert len(resolver.cache.data) > 1
     compare_response(q1, q2)
 
@@ -170,13 +180,19 @@ class TestPickling(unittest.TestCase):
     def test_reload(self):
         self.remove_cache(required=False)
         resolver = self.get_test_resolver()
+
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         using_memory = self.kwargs.get("archive", "") == "memory:///"
 
         assert len(resolver.cache.data) == 0
 
         seed_cache(resolver)
 
-        q1 = resolver.query("github.com.")
+        q1 = query("github.com.")
         assert q1
 
         if using_memory:
@@ -189,10 +205,15 @@ class TestPickling(unittest.TestCase):
         if not using_memory:
             resolver = self.get_test_resolver()
 
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         assert len(resolver.cache.data) > 0
 
         with dnspython_resolver_socket_block():
-            q2 = resolver.query("github.com.")
+            q2 = query("github.com.")
 
         compare_response(q1, q2)
 

@@ -14,9 +14,11 @@ from dns_cache.expiration import (
     MinExpirationLRUCache,
     NoExpirationCache,
 )
-from dns_cache.resolver import dnspython_resolver_socket_block
-
-from tests.test_upstream import TestCache
+from tests.test_upstream import (
+    DNSPYTHON_2,
+    dnspython_resolver_socket_block,
+    TestCache,
+)
 
 
 class TestCache(TestCache):
@@ -28,11 +30,17 @@ class TestCache(TestCache):
         valid_name = "api.github.com"
 
         resolver = self.get_test_resolver("8.8.8.8")
+
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         # Avoid the cleaning occurring instead of expiration
         if hasattr(resolver.cache, "next_cleaning"):
             resolver.cache.next_cleaning += TEN_MINS
 
-        q1 = resolver.query(valid_name)
+        q1 = query(valid_name)
         assert len(resolver.cache.data) == 1
         name = from_text(valid_name)
 
@@ -42,7 +50,7 @@ class TestCache(TestCache):
         assert len(resolver.cache.data) == 1
 
         with dnspython_resolver_socket_block():
-            q2 = resolver.query(valid_name)
+            q2 = query(valid_name)
 
         assert q2.__dict__ == q1.__dict__
 

@@ -22,7 +22,10 @@ from dns.resolver import (
     override_system_resolver,
 )
 
-from dns_cache.resolver import dnspython_resolver_socket_block
+from dns_cache.block import (
+    _SocketBlockedError,
+    dnspython_resolver_socket_block,
+)
 
 NAMESERVER = os.getenv("NAMESERVER", "8.8.8.8")
 WINDOWS = sys.platform == "win32"
@@ -58,12 +61,15 @@ def get_test_resolver(cls=Resolver, nameserver=NAMESERVER, **kwargs):
 
 
 class TestSocketBlock(unittest.TestCase):
+    def test_class(self):
+        assert isinstance(_SocketBlockedError(), AssertionError)
+
     def test_socket_block(self):
         "Verify the socket block logic works" ""
         resolver = get_test_resolver()
 
         with dnspython_resolver_socket_block():
-            with self.assertRaises(AssertionError) as cm:
+            with self.assertRaises(_SocketBlockedError) as cm:
                 resolver.query("first.attempt.invalid.")
             self.assertEqual(str(cm.exception), "_socket_factory_blocker invoked")
 

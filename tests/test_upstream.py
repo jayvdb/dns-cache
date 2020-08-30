@@ -102,7 +102,13 @@ class TestCache(unittest.TestCase):
 
         resolver = self.get_test_resolver(nameserver="8.8.8.8")
 
-        q1 = resolver.query(valid_name)
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
+        q1 = query(valid_name)
+
         assert len(resolver.cache.data) == 1
         name = from_text(valid_name)
 
@@ -110,7 +116,7 @@ class TestCache(unittest.TestCase):
         assert resolver.cache.get((name, A, IN))
 
         with dnspython_resolver_socket_block():
-            q2 = resolver.query(valid_name)
+            q2 = query(valid_name)
 
         assert q2 is q1
 
@@ -180,14 +186,19 @@ class TestCache(unittest.TestCase):
 
         resolver = self.get_test_resolver()
 
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         with self.assertRaises(NoNameservers):
-            resolver.query(name)
+            query(name)
 
         assert len(resolver.cache.data) == 0
 
         with self.assertRaises(NoNameservers):
             try:
-                resolver.query(name, tcp=True)
+                query(name, tcp=True)
             except Timeout:
                 raise unittest.SkipTest("Timeout occurred")
 
@@ -198,8 +209,13 @@ class TestCache(unittest.TestCase):
 
         resolver = self.get_test_resolver()
 
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         with self.assertRaises(DNSSyntaxError):
-            resolver.query(name)
+            query(name)
 
         assert len(resolver.cache.data) == 0
 
@@ -208,18 +224,23 @@ class TestCache(unittest.TestCase):
 
         resolver = self.get_test_resolver()
 
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         with self.assertRaises(NXDOMAIN):
-            resolver.query(missing_name)
+            query(missing_name)
 
         assert len(resolver.cache.data) == 0
 
         with self.assertRaises(NXDOMAIN):
-            resolver.query(missing_name)
+            query(missing_name)
 
         assert len(resolver.cache.data) == 0
 
         with self.assertRaises(NXDOMAIN):
-            resolver.query(missing_name, tcp=True)
+            query(missing_name, tcp=True)
 
         assert len(resolver.cache.data) == 0
 
@@ -229,9 +250,14 @@ class TestCache(unittest.TestCase):
         resolver = self.get_test_resolver()
         resolver.flags = 0
 
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         with self.assertRaises(NoAnswer):
             try:
-                resolver.query(name, MX, tcp=True)
+                query(name, MX, tcp=True)
             except (Timeout, NoNameservers):
                 raise unittest.SkipTest("Another DNS exception occurred")
 

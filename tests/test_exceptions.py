@@ -14,10 +14,13 @@ from dns.resolver import (
 from dns_cache.resolver import (
     ExceptionCachingResolver,
     _get_nxdomain_exception_values,
-    dnspython_resolver_socket_block,
 )
 
-from tests.test_upstream import TestCache
+from tests.test_upstream import (
+    DNSPYTHON_2,
+    dnspython_resolver_socket_block,
+    TestCache,
+)
 
 
 class TestCache(TestCache):
@@ -30,23 +33,33 @@ class TestCache(TestCache):
 
         resolver = self.get_test_resolver()
 
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         with self.assertRaises(NoNameservers):
-            resolver.query(name)
+            query(name)
 
         assert len(resolver.cache.data) == 1
 
         with dnspython_resolver_socket_block():
             with self.assertRaises(NoNameservers):
-                resolver.query(name)
+                query(name)
 
     def test_nxdomain(self):
         missing_name = "invalid.invalid."
 
         resolver = self.get_test_resolver()
 
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         e_qnames = e_responses = None
         with self.assertRaises(NXDOMAIN) as e:
-            resolver.query(missing_name)
+            query(missing_name)
 
         if not hasattr(e, "qnames"):
             e = e.exception
@@ -71,7 +84,7 @@ class TestCache(TestCache):
 
         with dnspython_resolver_socket_block():
             with self.assertRaises(NXDOMAIN) as e:
-                resolver.query(missing_name)
+                query(missing_name)
 
             if not hasattr(e, "qnames"):
                 e = e.exception
@@ -81,10 +94,10 @@ class TestCache(TestCache):
 
         with dnspython_resolver_socket_block():
             with self.assertRaises(NXDOMAIN):
-                resolver.query(missing_name)
+                query(missing_name)
 
         with self.assertRaises(NXDOMAIN):
-            resolver.query(missing_name)
+            query(missing_name)
 
         assert len(resolver.cache.data) == 1
 
@@ -94,14 +107,19 @@ class TestCache(TestCache):
         resolver = self.get_test_resolver()
         resolver.flags = 0
 
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
         with self.assertRaises(NoAnswer):
-            resolver.query(name, MX, tcp=True)
+            query(name, MX, tcp=True)
 
         assert len(resolver.cache.data) == 1
 
         with dnspython_resolver_socket_block():
             with self.assertRaises(NoAnswer):
-                resolver.query(name, MX, tcp=True)
+                query(name, MX, tcp=True)
 
 
 class TestLRUCache(TestCache):

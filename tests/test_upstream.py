@@ -26,6 +26,7 @@ from dns_cache.block import (
     _SocketBlockedError,
     dnspython_resolver_socket_block,
 )
+from dns_cache.resolver import DNSPYTHON_2
 
 NAMESERVER = os.getenv("NAMESERVER", "8.8.8.8")
 WINDOWS = sys.platform == "win32"
@@ -71,6 +72,14 @@ class TestSocketBlock(unittest.TestCase):
         with dnspython_resolver_socket_block():
             with self.assertRaises(_SocketBlockedError) as cm:
                 resolver.query("first.attempt.invalid.")
+            self.assertEqual(str(cm.exception), "_socket_factory_blocker invoked")
+
+        if not DNSPYTHON_2:
+            return
+
+        with dnspython_resolver_socket_block():
+            with self.assertRaises(_SocketBlockedError) as cm:
+                resolver.resolve("first.attempt.invalid.")
             self.assertEqual(str(cm.exception), "_socket_factory_blocker invoked")
 
 

@@ -70,7 +70,7 @@ class AggressiveCachingResolver(Resolver):
         assert self.cache
 
         answer = super(AggressiveCachingResolver, self).query(
-            qname, rdtype, rdclass, **kwargs
+            qname, rdtype=rdtype, rdclass=rdclass, **kwargs
         )
         # Stuff extra responses into the cache
         raise_on_no_answer = kwargs.get("raise_on_no_answer", True)
@@ -171,7 +171,7 @@ class ExceptionCachingResolver(Resolver):
 
         try:
             return super(ExceptionCachingResolver, self).query(
-                qname, rdtype, rdclass, **kwargs
+                qname, rdtype=rdtype, rdclass=rdclass, **kwargs
             )
         except DNSException as e:
             self._cache_exception(e, qname, rdtype, rdclass)

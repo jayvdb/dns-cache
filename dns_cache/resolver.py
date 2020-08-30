@@ -24,6 +24,27 @@ def _get_dnspython_version():
 
 
 class AggressiveCachingResolver(Resolver):
+    # dnspython 2 introduced resolve
+    def resolve(self, qname, rdtype=A, rdclass=IN,
+                tcp=False, source=None, raise_on_no_answer=True, source_port=0,
+                lifetime=None, search=None):
+        assert self.cache
+
+        answer = super(AggressiveCachingResolver, self).resolve(
+            qname, rdtype, rdclass, tcp, source,
+            raise_on_no_answer, source_port, lifetime,
+        )
+        # Stuff extra responses into the cache
+        rrsets = answer.response.answer
+        assert not raise_on_no_answer or rrsets
+
+        for rrset in rrsets:
+            self.cache.put((rrset.name, rrset.rdtype, rrset.rdclass), answer)
+        return answer
+
+    if not DNSPYTHON_2:  # pragma: no cover
+        del resolve
+
     def query(self, qname, rdtype=A, rdclass=IN, **kwargs):
         assert self.cache
 
@@ -34,6 +55,10 @@ class AggressiveCachingResolver(Resolver):
         raise_on_no_answer = kwargs.get("raise_on_no_answer", True)
         rrsets = answer.response.answer
         assert not raise_on_no_answer or rrsets
+
+        if DNSPYTHON_2:
+            # Extra caching was already done in .resolve
+            return answer
 
         for rrset in rrsets:
             self.cache.put((rrset.name, rrset.rdtype, rrset.rdclass), answer)
@@ -56,7 +81,10 @@ def _get_nxdomain_exception_values(e):  # pragma: no cover
 
 
 class ExceptionCachingResolver(Resolver):
-    def query(self, qname, rdtype=A, rdclass=IN, **kwargs):
+    # dnspython 2 introduced resolve
+    def resolve(self, qname, rdtype=A, rdclass=IN,
+                tcp=False, source=None, raise_on_no_answer=True, source_port=0,
+                lifetime=None, search=None):
         assert self.cache
 
         if isinstance(qname, StringTypes):
@@ -70,10 +98,45 @@ class ExceptionCachingResolver(Resolver):
                 raise answer
 
         try:
+            return super(ExceptionCachingResolver, self).resolve(
+                qname, rdtype, rdclass, tcp, source,
+                raise_on_no_answer, source_port, lifetime,
+            )
+        except DNSException as e:
+            self._cache_exception(e, qname, rdtype, rdclass)
+            raise
+
+    if not DNSPYTHON_2:  # pragma: no cover
+        del resolve
+
+    def query(self, qname, rdtype=A, rdclass=IN, **kwargs):
+        assert self.cache
+
+        if isinstance(qname, StringTypes):
+            qname = from_text(qname)
+
+        answer = self.cache.get((qname, rdtype, rdclass))
+        if answer is not None:
+            if isinstance(answer, NXAnswer):
+                raise NXDOMAIN(qnames=[qname], responses={qname: answer.response})
+            elif isinstance(answer, DNSException):
+                raise answer
+
+        if DNSPYTHON_2:
+            return super(ExceptionCachingResolver, self).query(
+                qname, rdtype=rdtype, rdclass=rdclass, **kwargs
+            )
+
+        try:
             return super(ExceptionCachingResolver, self).query(
                 qname, rdtype, rdclass, **kwargs
             )
-        except NXDOMAIN as e:
+        except DNSException as e:
+            self._cache_exception(e, qname, rdtype, rdclass)
+            raise
+
+    def _cache_exception(self, e, qname, rdtype, rdclass):
+        if isinstance(e, NXDOMAIN):
             qnames, responses = _get_nxdomain_exception_values(e)
             for _qname, response in responses.items():
                 answer = NXAnswer(
@@ -81,9 +144,7 @@ class ExceptionCachingResolver(Resolver):
                 )
                 self.cache.put((_qname, rdtype, rdclass), answer)
 
-            raise
-        except DNSException as e:
+        else:
             now = time.time()
             e.expiration = now + dns_cache.expiration.MIN_TTL
             self.cache.put((qname, rdtype, rdclass), e)
-            raise

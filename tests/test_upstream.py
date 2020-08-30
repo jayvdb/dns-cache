@@ -1,4 +1,5 @@
 """Tests for dnspython and its builtin cache."""
+import functools
 import os
 import socket
 import sys
@@ -24,6 +25,10 @@ from dns.resolver import (
     override_system_resolver,
 )
 
+import pubdns
+
+from unittest_expander import foreach, expand
+
 from dns_cache.block import (
     _SocketBlockedError,
     dnspython_resolver_socket_block,
@@ -33,8 +38,12 @@ from dns_cache.resolver import (
     DNSPYTHON_2,
 )
 
-NAMESERVER = os.getenv("NAMESERVER", "8.8.8.8")
+DEFAULT_NAMESERVER = "8.8.8.8"
+NAMESERVER = os.getenv("NAMESERVER", None)
 WINDOWS = sys.platform == "win32"
+PY2 = sys.version_info < (3, 0)
+
+pd = pubdns.PubDNS()
 
 
 def compare_response(a, b):
@@ -47,7 +56,31 @@ def compare_response(a, b):
         raise unittest.SkipTest("Encountered bug in dnspython __eq__")
 
 
-def get_test_resolver(cls=Resolver, nameserver=NAMESERVER, **kwargs):
+def _get_nameservers():
+    if NAMESERVER:
+        return [NAMESERVER]
+
+    data = pd.servers("US")
+    return sorted([
+        entry["server"] for entry in data
+        if ":" not in entry["server"]
+    ])
+
+
+def _get_nameserver_sample(rate=5):
+    return [
+        nameserver
+        for i, nameserver in enumerate(_get_nameservers())
+        if not i % rate
+    ]
+
+
+get_nameservers = functools.partial(
+    _get_nameserver_sample, rate=5 if PY2 else 4
+)
+
+
+def get_test_resolver(cls=Resolver, nameserver=None, **kwargs):
     resolver = cls(configure=False, **kwargs)
     try:
         if sys.platform == "win32":
@@ -56,6 +89,12 @@ def get_test_resolver(cls=Resolver, nameserver=NAMESERVER, **kwargs):
             resolver.read_resolv_conf("/etc/resolv.conf")
     except Exception:
         pass
+
+    if not nameserver:
+        if NAMESERVER:
+            nameserver = NAMESERVER
+        else:
+            nameserver = DEFAULT_NAMESERVER
 
     resolver.nameservers = [nameserver]
 
@@ -88,13 +127,13 @@ class TestSocketBlock(unittest.TestCase):
             self.assertEqual(str(cm.exception), "_socket_factory_blocker invoked")
 
 
-class TestCache(unittest.TestCase):
+class _TestCacheBase(object):
 
     resolver_cls = Resolver
     cache_cls = Cache
     expiration = 60 * 5
 
-    def get_test_resolver(self, nameserver=NAMESERVER):
+    def get_test_resolver(self, nameserver=None):
         resolver = get_test_resolver(self.resolver_cls, nameserver)
         resolver.cache = self.cache_cls()
 
@@ -194,10 +233,10 @@ class TestCache(unittest.TestCase):
         ip = socket.gethostbyname(a)
         assert ip == "46.101.245.76"
 
-    def test_hit_additional(self, aggressive=False):
+    def _test_hit_additional(self, nameserver, aggressive=False):
         name = "cloudflare.com."
 
-        resolver = self.get_test_resolver("8.8.8.8")
+        resolver = self.get_test_resolver(nameserver)
 
         try:
             q1 = resolver.query(name, NS)
@@ -264,10 +303,10 @@ class TestCache(unittest.TestCase):
 
         # TODO use a socket function which gets NS records
 
-    def test_hit_authority(self, aggressive=False):
+    def _test_hit_authority(self, nameserver, aggressive=False):
         name = "a.gtld-servers.net."
 
-        resolver = self.get_test_resolver()
+        resolver = self.get_test_resolver(nameserver)
 
         try:
             q1 = resolver.query(name, A)
@@ -500,6 +539,23 @@ class TestCache(unittest.TestCase):
         assert len(resolver.cache.data) == expected_cache_count
 
         return resolver
+
+
+@expand
+class TestCache(_TestCacheBase, unittest.TestCase):
+    @foreach(get_nameservers())
+    def test_hit_additional(self, nameserver=None):
+        if not nameserver:
+            raise unittest.SkipTest("unittest_expander leftover")
+
+        self._test_hit_additional(nameserver)
+
+    @foreach(get_nameservers())
+    def test_hit_authority(self, nameserver=None):
+        if not nameserver:
+            raise unittest.SkipTest("unittest_expander leftover")
+
+        self._test_hit_authority(nameserver)
 
 
 class TestLRUCache(TestCache):

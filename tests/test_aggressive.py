@@ -69,9 +69,9 @@ class TestCache(TestCache):
 
             assert ip == "46.101.245.76"
 
-    def test_hit_additional(self):
-        resolver, additional_a_names = super(TestCache, self).test_hit_additional(
-            aggressive=True)
+    def _test_hit_additional(self, nameserver):
+        resolver, additional_a_names = super(TestCache, self)._test_hit_additional(
+            nameserver, aggressive=True)
 
         with dnspython_resolver_socket_block():
             answer = resolver.query(additional_a_names[0], A)
@@ -81,9 +81,9 @@ class TestCache(TestCache):
             ip = socket.gethostbyname(additional_a_names[0])
             assert ip
 
-    def test_hit_authority(self):
-        resolver, authority_names = super(TestCache, self).test_hit_authority(
-            aggressive=True)
+    def _test_hit_authority(self, nameserver):
+        resolver, authority_names = super(TestCache, self)._test_hit_authority(
+            nameserver, aggressive=True)
 
         with dnspython_resolver_socket_block():
             answer = resolver.query(authority_names[0], NS)

@@ -1,4 +1,6 @@
 """Tests for caching exceptions."""
+import unittest
+
 from dns.name import from_text
 from dns.rdataclass import IN
 from dns.rdatatype import A, ANY, MX
@@ -17,13 +19,17 @@ from dns_cache.resolver import (
 )
 
 from tests.test_upstream import (
+    _get_nameserver_sample,
+    _TestCacheBase,
     DNSPYTHON_2,
     dnspython_resolver_socket_block,
-    TestCache,
+    expand,
+    foreach,
 )
 
 
-class TestCache(TestCache):
+@expand
+class TestCache(_TestCacheBase, unittest.TestCase):
 
     cache_cls = Cache
     resolver_cls = ExceptionCachingResolver
@@ -116,6 +122,20 @@ class TestCache(TestCache):
         with dnspython_resolver_socket_block():
             with self.assertRaises(NoAnswer):
                 query(name, MX, tcp=True)
+
+    @foreach(_get_nameserver_sample(rate=20))
+    def test_hit_additional(self, nameserver=None):
+        if not nameserver:
+            raise unittest.SkipTest("unittest_expander leftover")
+
+        super(TestCache, self)._test_hit_additional(nameserver)
+
+    @foreach(_get_nameserver_sample(rate=20))
+    def test_hit_authority(self, nameserver=None):
+        if not nameserver:
+            raise unittest.SkipTest("unittest_expander leftover")
+
+        super(TestCache, self)._test_hit_authority(nameserver)
 
 
 class TestLRUCache(TestCache):

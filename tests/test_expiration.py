@@ -1,5 +1,6 @@
 """Tests for overriding expiration."""
 import datetime
+import unittest
 
 from dns.name import from_text
 from dns.rdataclass import IN
@@ -16,13 +17,17 @@ from dns_cache.expiration import (
     NoExpirationCache,
 )
 from tests.test_upstream import (
+    _get_nameserver_sample,
+    _TestCacheBase,
     DNSPYTHON_2,
     dnspython_resolver_socket_block,
-    TestCache,
+    expand,
+    foreach,
 )
 
 
-class TestCache(TestCache):
+@expand
+class TestCache(_TestCacheBase, unittest.TestCase):
 
     cache_cls = MinExpirationCache
     expiration = TEN_MINS
@@ -66,6 +71,20 @@ class TestCache(TestCache):
 
     def test_nxdomain(self):
         super(TestCache, self).test_nxdomain(long_expiry=DNSPYTHON_2)
+
+    @foreach(_get_nameserver_sample(rate=20))
+    def test_hit_additional(self, nameserver=None):
+        if not nameserver:
+            raise unittest.SkipTest("unittest_expander leftover")
+
+        super(TestCache, self)._test_hit_additional(nameserver)
+
+    @foreach(_get_nameserver_sample(rate=20))
+    def test_hit_authority(self, nameserver=None):
+        if not nameserver:
+            raise unittest.SkipTest("unittest_expander leftover")
+
+        super(TestCache, self)._test_hit_authority(nameserver)
 
 
 class TestLRUCache(TestCache):

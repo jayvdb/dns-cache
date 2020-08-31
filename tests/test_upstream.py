@@ -191,16 +191,21 @@ class TestCache(unittest.TestCase):
         else:
             query = resolver.query
 
-        with self.assertRaises(NoNameservers):
+        try:
             query(name)
+        except Timeout:
+            raise unittest.SkipTest("Timeout occurred")
+        except NoNameservers:
+            pass
 
         assert len(resolver.cache.data) == 0
 
-        with self.assertRaises(NoNameservers):
-            try:
-                query(name, tcp=True)
-            except Timeout:
-                raise unittest.SkipTest("Timeout occurred")
+        try:
+            query(name, tcp=True)
+        except Timeout:
+            raise unittest.SkipTest("Timeout occurred")
+        except NoNameservers:
+            pass
 
         assert len(resolver.cache.data) == 0
 

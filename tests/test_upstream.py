@@ -229,8 +229,12 @@ class TestCache(unittest.TestCase):
         else:
             query = resolver.query
 
-        with self.assertRaises(NXDOMAIN):
+        try:
             query(missing_name)
+        except NXDOMAIN:
+            pass
+        else:
+            raise unittest.SkipTest('DNS hijacked')
 
         assert len(resolver.cache.data) == 0
 

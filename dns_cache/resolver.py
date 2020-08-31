@@ -5,7 +5,7 @@ from dns.message import make_query, make_response
 from dns.name import from_text
 from dns.rdataclass import IN
 from dns.rdatatype import A
-from dns.resolver import NXDOMAIN, Answer, Resolver
+from dns.resolver import NXDOMAIN, Answer, NoMetaqueries, Resolver
 from dns.version import MAJOR as _MAJOR, MINOR as _MINOR
 
 import dns_cache.expiration
@@ -144,6 +144,8 @@ class ExceptionCachingResolver(Resolver):
                 qname, rdtype, rdclass, tcp, source,
                 raise_on_no_answer, source_port, lifetime,
             )
+        except NoMetaqueries:
+            raise
         except DNSException as e:
             self._cache_exception(e, qname, rdtype, rdclass)
             raise
@@ -173,6 +175,8 @@ class ExceptionCachingResolver(Resolver):
             return super(ExceptionCachingResolver, self).query(
                 qname, rdtype=rdtype, rdclass=rdclass, **kwargs
             )
+        except NoMetaqueries:
+            raise
         except DNSException as e:
             self._cache_exception(e, qname, rdtype, rdclass)
             raise

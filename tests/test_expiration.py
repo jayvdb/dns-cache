@@ -4,6 +4,7 @@ import datetime
 from dns.name import from_text
 from dns.rdataclass import IN
 from dns.rdatatype import A
+from dns.resolver import NXDOMAIN
 
 from freezegun import freeze_time
 
@@ -62,6 +63,9 @@ class TestCache(TestCache):
             assert len(resolver.cache.data) == 0
         else:
             assert len(resolver.cache.data) == 1
+
+    def test_nxdomain(self):
+        super(TestCache, self).test_nxdomain(long_expiry=DNSPYTHON_2)
 
 
 class TestLRUCache(TestCache):

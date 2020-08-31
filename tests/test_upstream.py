@@ -318,12 +318,12 @@ class TestCache(unittest.TestCase):
         with self.assertRaises(NXDOMAIN):
             query(missing_name, A, tcp=True)
 
-        # While dnspython 2 creates a cache entry for ANY,
-        # it doesnt appear to allow cached responses to A either,
-        # unless the cache min expiry is increased, which occurs
-        # only after dnspython 2.0
+        # While dnspython 2 creates a cache entry for ANY, and it uses
+        # that caching to response to A without network activity,
+        # the cache entry expiries very quickly.  This appear to be
+        # improved in dnspython 2.1dev.
         if not long_expiry:
-            if _get_dnspython_version() >= (2, 0):
+            if DNSPYTHON_2:
                 long_expiry = True
 
         if long_expiry:

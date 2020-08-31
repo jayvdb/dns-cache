@@ -48,8 +48,8 @@ class TestCache(TestCache):
     def test_nxdomain(self):
         missing_name = "invalid.invalid."
 
-        resolver = super(TestCache, self).test_nxdomain(expected_extra=1)
-        expected_cache_count = 2 if DNSPYTHON_2 else 1
+        resolver, first_e = super(TestCache, self).test_nxdomain(
+            expected_extra=1, ignore_any=True)
 
         name = from_text(missing_name)
 
@@ -63,14 +63,7 @@ class TestCache(TestCache):
         else:
             query = resolver.query
 
-        e_qnames = e_responses = None
-        with self.assertRaises(NXDOMAIN) as e:
-            query(missing_name)
-
-        if not hasattr(e, "qnames"):
-            e = e.exception
-        e_qnames, e_responses = _get_nxdomain_exception_values(e)
-        assert e_qnames and e_responses
+        e_qnames, e_responses = _get_nxdomain_exception_values(first_e)
 
         assert len(resolver.cache.data) == 1
 

@@ -9,13 +9,15 @@ from dns.exception import SyntaxError as DNSSyntaxError
 from dns.exception import Timeout
 from dns.name import from_text
 from dns.rdataclass import IN
-from dns.rdatatype import MX, A
+from dns.rdatatype import A, ANY, MX
 from dns.resolver import (
     NXDOMAIN,
+    Answer,
     Cache,
     LRUCache,
     LRUCacheNode,
     NoAnswer,
+    NoMetaqueries,
     NoNameservers,
     Resolver,
     _getaddrinfo,
@@ -26,7 +28,10 @@ from dns_cache.block import (
     _SocketBlockedError,
     dnspython_resolver_socket_block,
 )
-from dns_cache.resolver import DNSPYTHON_2
+from dns_cache.resolver import (
+    _get_nxdomain_exception_values,
+    DNSPYTHON_2,
+)
 
 NAMESERVER = os.getenv("NAMESERVER", "8.8.8.8")
 WINDOWS = sys.platform == "win32"
@@ -237,7 +242,7 @@ class TestCache(unittest.TestCase):
 
         assert len(resolver.cache.data) == 0
 
-    def test_nxdomain(self, expected_extra=0):
+    def test_nxdomain(self, expected_extra=0, long_expiry=False, ignore_any=False):
         missing_name = "invalid.invalid."
 
         expected_cache_count = expected_extra + (1 if DNSPYTHON_2 else 0)
@@ -256,19 +261,84 @@ class TestCache(unittest.TestCase):
         else:
             raise unittest.SkipTest("DNS hijacked")
 
-        with self.assertRaises(NXDOMAIN):
+        e_qnames = e_responses = None
+        with self.assertRaises(NXDOMAIN) as first_e:
             query(missing_name)
+
+        if not hasattr(first_e, "qnames"):
+            first_e = first_e.exception
+        e_qnames, e_responses = _get_nxdomain_exception_values(first_e)
+        assert e_qnames and e_responses
+
+        name = from_text(missing_name)
+        assert e_qnames == [name]
 
         assert len(resolver.cache.data) == expected_cache_count
 
         self._flush_cache(resolver)
 
         with self.assertRaises(NXDOMAIN):
-            query(missing_name, tcp=True)
+            query(missing_name, A, tcp=True)
 
         assert len(resolver.cache.data) == expected_cache_count
 
-        return resolver
+        if DNSPYTHON_2:
+            assert (name, ANY, IN) in resolver.cache.data
+            entry = resolver.cache.data[(name, ANY, IN)]
+            assert entry is not None
+
+            if isinstance(entry, LRUCacheNode):
+                entry = entry.value
+
+            assert isinstance(entry, Answer)
+
+        if expected_extra:
+            assert (name, A, IN) in resolver.cache.data
+        else:
+            assert (name, A, IN) not in resolver.cache.data
+
+        # While dnspython 2 creates a cache entry for ANY,
+        # requests for ANY fail, and the cache entry persists
+        with self.assertRaises(NoMetaqueries):
+            query(missing_name, ANY)
+
+        # The exception caching .resolve sets ignore_any becase it
+        # fetches from the cache, which removes the cache entry unless
+        # the expiration is high
+        if DNSPYTHON_2 and not ignore_any:
+            assert (name, ANY, IN) in resolver.cache.data
+            entry = resolver.cache.data[(name, ANY, IN)]
+            assert entry is not None
+
+            if isinstance(entry, LRUCacheNode):
+                entry = entry.value
+
+            assert isinstance(entry, Answer)
+
+        with self.assertRaises(NXDOMAIN):
+            query(missing_name, A, tcp=True)
+
+        # While dnspython 2 creates a cache entry for ANY, and it uses
+        # that caching to response to A without network activity,
+        # the cache entry expiries very quickly.  This appear to be
+        # improved in dnspython 2.1dev.
+        if not long_expiry:
+            if DNSPYTHON_2:
+                long_expiry = True
+
+        if long_expiry:
+            with self.assertRaises(NXDOMAIN):
+                with dnspython_resolver_socket_block():
+                    query(missing_name, A)
+
+        # bailout because test_exceptions would fail the below assertion, as the
+        # exception NODOMAIN will be raised even when the socket is blocked
+        if expected_extra or long_expiry:
+            return resolver, first_e
+
+        with self.assertRaises(_SocketBlockedError):
+            with dnspython_resolver_socket_block():
+                query(missing_name, A)
 
     def test_no_answer(self, expected_extra=0):
         name = "www.google.com"

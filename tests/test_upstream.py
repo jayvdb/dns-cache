@@ -64,6 +64,12 @@ def _get_nameservers():
     return sorted([
         entry["server"] for entry in data
         if ":" not in entry["server"]
+        and entry["server"] not in [
+            "24.154.1.5",  # NoAnswer
+            # NoNameserver:
+            "97.64.136.6",
+            "216.240.32.71",
+        ]
     ])
 
 

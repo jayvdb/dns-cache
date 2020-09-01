@@ -10,7 +10,7 @@ from dns.exception import SyntaxError as DNSSyntaxError
 from dns.exception import Timeout
 from dns.name import from_text
 from dns.rdataclass import IN
-from dns.rdatatype import A, ANY, MX, NS
+from dns.rdatatype import A, AAAA, ANY, MX, NS
 from dns.resolver import (
     NXDOMAIN,
     Answer,
@@ -283,10 +283,26 @@ class _TestCacheBase(object):
         assert len(rrsets) > 1
         rrset = rrsets[0]
 
+        additional_names = sorted(set([
+            rrset.name for rrset in rrsets
+            if rrset.rdclass == IN
+        ]))
+        assert additional_names
+
         additional_a_names = sorted(set([
             rrset.name for rrset in rrsets
             if rrset.rdtype == A and rrset.rdclass == IN
         ]))
+
+        if not additional_a_names:
+            additional_aaaa_names = sorted(set([
+                rrset.name for rrset in rrsets
+                if rrset.rdtype == AAAA and rrset.rdclass == IN
+            ]))
+            if additional_aaaa_names:
+                raise unittest.SkipTest("Additional only has AAAA")
+
+        assert additional_a_names
 
         with dnspython_resolver_socket_block():
             q2 = resolver.query(name, NS)

@@ -252,6 +252,11 @@ class _TestCacheBase(object):
         if not q1.response.additional:
             raise unittest.SkipTest("no additional section")
 
+        # Many US servers are returning an additional section with
+        # only a single entry, as opposed to many as expected by the logic.
+        if len(q1.response.additional) == 1:
+            raise unittest.SkipTest("additional section has one entry")
+
         if aggressive:
             assert len(resolver.cache.data) > 1
         else:

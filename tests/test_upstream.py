@@ -23,6 +23,7 @@ from dns.resolver import (
     Resolver,
     _getaddrinfo,
     override_system_resolver,
+    restore_system_resolver,
 )
 
 import pubdns
@@ -45,6 +46,7 @@ WINDOWS = sys.platform == "win32"
 PY2 = sys.version_info < (3, 0)
 
 pd = pubdns.PubDNS()
+orig_gethostbyname = socket.gethostbyname
 
 
 def compare_response(a, b):
@@ -142,6 +144,10 @@ class _TestCacheBase(object):
     resolver_cls = Resolver
     cache_cls = Cache
     expiration = 60 * 5
+
+    def tearDown(self):
+        restore_system_resolver()
+        assert socket.gethostbyname == orig_gethostbyname
 
     def get_test_resolver(self, nameserver=None):
         resolver = get_test_resolver(self.resolver_cls, nameserver)
@@ -569,6 +575,30 @@ class _TestCacheBase(object):
         assert len(resolver.cache.data) == expected_cache_count
 
         return resolver
+
+    def test_miss_localhost(self):
+        name = "localhost"
+
+        assert socket.gethostbyname == orig_gethostbyname
+
+        try:
+            socket.gethostbyname(name)
+        except Exception as e:
+            raise unittest.SkipTest("gethostbyname: {}".format(e))
+
+        resolver = self.get_test_resolver()
+
+        if DNSPYTHON_2:
+            query = resolver.resolve
+        else:
+            query = resolver.query
+
+        with self.assertRaises(_SocketBlockedError):
+            with dnspython_resolver_socket_block():
+                query(name)
+
+        with self.assertRaises(NXDOMAIN):
+            query(name)
 
 
 @expand

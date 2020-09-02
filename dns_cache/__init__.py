@@ -7,8 +7,14 @@ from dns.resolver import override_system_resolver as upstream_override_system_re
 
 from .expiration import _NO_EXPIRY as NO_EXPIRY
 from .expiration import FIVE_MINS, MinExpirationCache, NoExpirationCache
+from .persistence import _LayeredCache
 from .pickle import PickableCache
 from .resolver import AggressiveCachingResolver, ExceptionCachingResolver
+
+try:
+    from .hosts import HostsCache
+except ImportError:
+    HostsCache = None
 
 __version__ = "0.2.0"
 
@@ -27,9 +33,10 @@ class NoExpirationPickableCache(NoExpirationCache, PickableCache):
 
 def override_system_resolver(
     resolver=None, cache=None, directory=None, min_ttl=FIVE_MINS
-):  # pragma: no cover
+):
     if not cache:
-        if directory:
+        if directory:  # pragma: no cover
+
             try:
                 os.makedirs(directory, exist_ok=True)
             except TypeError:
@@ -49,14 +56,17 @@ def override_system_resolver(
             else:
                 cache = MinExpirationCache(min_ttl=min_ttl)
 
+        if HostsCache:
+            cache = _LayeredCache(HostsCache(filename=None), cache)
+
     if not resolver:
         resolver = Resolver(configure=False)
-        try:
+        try:  # pragma: no cover
             if sys.platform == "win32":
                 resolver.read_registry()
             else:
                 resolver.read_resolv_conf("/etc/resolv.conf")
-        except Exception:
+        except Exception:  # pragma: no cover
             resolver.nameservers = ["8.8.8.8"]
 
         resolver.cache = cache

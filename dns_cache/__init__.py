@@ -33,9 +33,10 @@ class NoExpirationPickableCache(NoExpirationCache, PickableCache):
 
 def override_system_resolver(
     resolver=None, cache=None, directory=None, min_ttl=FIVE_MINS
-):  # pragma: no cover
+):
     if not cache:
-        if directory:
+        if directory:  # pragma: no cover
+
             try:
                 os.makedirs(directory, exist_ok=True)
             except TypeError:
@@ -60,12 +61,12 @@ def override_system_resolver(
 
     if not resolver:
         resolver = Resolver(configure=False)
-        try:
+        try:  # pragma: no cover
             if sys.platform == "win32":
                 resolver.read_registry()
             else:
                 resolver.read_resolv_conf("/etc/resolv.conf")
-        except Exception:
+        except Exception:  # pragma: no cover
             resolver.nameservers = ["8.8.8.8"]
 
         resolver.cache = cache

@@ -28,6 +28,7 @@ def _convert_entries(entries, expiration=None):
             rdtype = AAAA
         else:
             continue
+
         for name in entry.names:
             name = from_text(name)
 
@@ -35,10 +36,8 @@ def _convert_entries(entries, expiration=None):
             rrset = create_simple_rrset(name, ip, rdtype, rdclass=IN)
             rrset.ttl = _year_in_seconds
             out_entry = create_answer(name, rrset)
-            # print("out_entry.expiration 1", out_entry.expiration)
             if expiration:
                 out_entry.expiration = expiration
-            # print("out_entry.expiration 2", out_entry.expiration)
 
             out_data.append(out_entry)
 
@@ -50,7 +49,6 @@ def loads(filename=None):
      hosts.populate_entries()
      mtime = os.path.getmtime(hosts.hosts_path)
      expiration = mtime + _year_in_seconds
-     # print('file mtime', mtime, expiration)
      dnspython_data = _convert_entries(hosts.entries, expiration)
      
      return dnspython_data

@@ -13,6 +13,7 @@ from python_hosts import Hosts
 
 from .dnspython import create_answer, create_simple_rrset
 from .expiration import NoExpirationCacheBase
+from .persistence import _DeserializeOnGetCacheBase
 
 _year_in_seconds = timedelta(days=365).total_seconds()
 
@@ -51,32 +52,6 @@ def loads(filename=None):
      dnspython_data = _convert_entries(hosts.entries, expiration)
 
      return dnspython_data
-
-
-class _DeserializeOnGetCacheBase(object):
-    def __init__(
-        self,
-        filename,
-        deserializer,
-        *args,
-        **kwargs
-    ):
-        assert deserializer
-        super(_DeserializeOnGetCacheBase, self).__init__(*args, **kwargs)
-        self._filename = filename
-        self._deserializer = deserializer
-
-    def get(self, key):
-        if self._deserialize:
-            self._deserialize()
-            self._deserialize = None
-        return super(_DeserializeOnGetCacheBase, self).get(key)
-
-    def _deserialize(self):
-        data = self._deserializer(self._filename)
-        for entry in data:
-            key = (entry.name, entry.rdtype, entry.rdclass)
-            self.put(key, entry)
 
 
 class HostsCacheBase(_DeserializeOnGetCacheBase, NoExpirationCacheBase):

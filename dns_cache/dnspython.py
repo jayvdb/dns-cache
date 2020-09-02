@@ -1,6 +1,6 @@
 from dns.message import make_query, make_response
 
-from dns.name import from_text
+from dns.name import from_text, Name
 from dns.rdata import get_rdata_class
 from dns.rdataclass import IN
 from dns.rdatatype import A
@@ -31,7 +31,8 @@ def create_rdata(address, rdtype=A, rdclass=IN):
 
 
 def create_simple_rrset(name, address, rdtype=A, rdclass=IN):
-    name = from_text(name)
+    if not isinstance(name, Name):
+        name = from_text(name)
 
     rdata = create_rdata(rdclass=rdclass, rdtype=rdtype, address=address)
     rrset = RRset(name, rdclass, rdtype)
@@ -43,7 +44,9 @@ def create_simple_rrset(name, address, rdtype=A, rdclass=IN):
 def create_answer(name, rrset):
     rdtype = rrset.rdtype
     rdclass = rrset.rdclass
-    name = from_text(name)
+
+    if not isinstance(name, Name):
+        name = from_text(name)
 
     query = make_query(name, rdtype, rdclass)
     response = make_response(query)

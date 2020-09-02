@@ -56,11 +56,10 @@ def loads(filename="/etc/hosts"):
 class _DeserializeOnGetCacheBase(object):
     def __init__(
         self,
-        filename=None,
-        serializer=None,
-        deserializer=None,
+        filename,
+        deserializer,
         *args,
-        **kwargs,
+        **kwargs
     ):
         assert filename and deserializer
         super(_DeserializeOnGetCacheBase, self).__init__(*args, **kwargs)
@@ -83,17 +82,14 @@ class _DeserializeOnGetCacheBase(object):
 class HostsCacheBase(_DeserializeOnGetCacheBase, NoExpirationCacheBase):
     def __init__(
         self,
-        filename=None,
-        serializer=None,
-        deserializer=loads,
+        filename,
         *args,
-        **kwargs,
+        **kwargs
     ):
         super(HostsCacheBase, self).__init__(
-            filename=filename,
-            serializer=serializer,
-            deserializer=deserializer,
             *args,
+            filename=filename,
+            deserializer=loads,
             **kwargs)
 
 

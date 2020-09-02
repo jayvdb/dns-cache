@@ -7,8 +7,14 @@ from dns.resolver import override_system_resolver as upstream_override_system_re
 
 from .expiration import _NO_EXPIRY as NO_EXPIRY
 from .expiration import FIVE_MINS, MinExpirationCache, NoExpirationCache
+from .persistence import _LayeredCache
 from .pickle import PickableCache
 from .resolver import AggressiveCachingResolver, ExceptionCachingResolver
+
+try:
+    from .hosts import HostsCache
+except ImportError:
+    HostsCache = None
 
 __version__ = "0.2.0"
 
@@ -48,6 +54,9 @@ def override_system_resolver(
                 cache = NoExpirationCache(min_ttl=min_ttl)
             else:
                 cache = MinExpirationCache(min_ttl=min_ttl)
+
+        if HostsCache:
+            cache = _LayeredCache(HostsCache(filename=None), cache)
 
     if not resolver:
         resolver = Resolver(configure=False)

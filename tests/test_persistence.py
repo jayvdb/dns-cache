@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import os.path
 import pickle
 import shutil
+import socket
 import sys
 import unittest
 
@@ -26,6 +27,8 @@ from tests.test_upstream import (
     DNSPYTHON_2,
     dnspython_resolver_socket_block,
     get_test_resolver,
+    orig_gethostbyname,
+    restore_system_resolver,
 )
 
 try:
@@ -67,6 +70,10 @@ def seed_cache(resolver):
 class _TestPersistentCacheBase(object):
     cache_cls = None
     kwargs = {}
+
+    def tearDown(self):
+        restore_system_resolver()
+        assert socket.gethostbyname == orig_gethostbyname
 
     def is_jsonpickle(self):
         serializer = self.kwargs.get("serializer", None)

@@ -5,7 +5,6 @@ import unittest
 from dns.name import from_text
 from dns.rdataclass import IN
 from dns.rdatatype import A
-from dns.resolver import NXDOMAIN
 
 from freezegun import freeze_time
 

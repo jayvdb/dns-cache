@@ -286,7 +286,6 @@ class _TestCacheBase(object):
         rrsets = answer.response.additional
         assert rrsets
         assert len(rrsets) > 1
-        rrset = rrsets[0]
 
         additional_names = sorted(set([
             rrset.name for rrset in rrsets

@@ -1,8 +1,5 @@
 import unittest
 
-from dns.rdataclass import IN
-from dns.rdatatype import A
-
 from dns_cache.hosts import loads
 
 

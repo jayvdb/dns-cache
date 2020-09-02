@@ -31,6 +31,8 @@ def create_rdata(address, rdtype=A, rdclass=IN):
 
 
 def create_simple_rrset(name, address, rdtype=A, rdclass=IN):
+    name = from_text(name)
+
     rdata = create_rdata(rdclass=rdclass, rdtype=rdtype, address=address)
     rrset = RRset(name, rdclass, rdtype)
     rrset.add(rdata)
@@ -41,6 +43,7 @@ def create_simple_rrset(name, address, rdtype=A, rdclass=IN):
 def create_answer(name, rrset):
     rdtype = rrset.rdtype
     rdclass = rrset.rdclass
+    name = from_text(name)
 
     query = make_query(name, rdtype, rdclass)
     response = make_response(query)

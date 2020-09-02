@@ -12,10 +12,6 @@ from disk_dict import DiskDict
 class DiskDict(StringKeyDictBase, DiskDict):  # pragma: no cover
     def __len__(self):
         return len(list(self.keys()))
-        try:
-            return len(self.keys())
-        except ValueError:
-            return 0
 
 
 class DiskDictCacheBase(object):  # pragma: no cover

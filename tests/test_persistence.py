@@ -262,7 +262,7 @@ class TestLRUPickling(TestPickling):
 class TestHosts(TestPickling):
 
     cache_cls = HostsCache
-    kwargs = {"filename": "/etc/hosts"}
+    kwargs = {"filename": None}
     query_name = "localhost."
     load_on_get = True
     seed_cache = lambda self, resolver: None

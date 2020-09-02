@@ -43,10 +43,10 @@ def _convert_entries(entries, expiration=None):
     return out_data
 
 
-def loads(filename="/etc/hosts"):
+def loads(filename=None):
      hosts = Hosts(path=filename)
      hosts.populate_entries()
-     mtime = os.path.getmtime(filename)
+     mtime = os.path.getmtime(hosts.hosts_path)
      expiration = mtime + _year_in_seconds
      dnspython_data = _convert_entries(hosts.entries, expiration)
 
@@ -61,7 +61,7 @@ class _DeserializeOnGetCacheBase(object):
         *args,
         **kwargs
     ):
-        assert filename and deserializer
+        assert deserializer
         super(_DeserializeOnGetCacheBase, self).__init__(*args, **kwargs)
         self._filename = filename
         self._deserializer = deserializer

@@ -63,10 +63,9 @@ def seed_cache(resolver):
     compare_response(q1, q2)
 
 
-class TestPickling(unittest.TestCase):
-
-    cache_cls = PickableCache
-    kwargs = {"filename": os.path.abspath("dns.pickle")}
+class _TestPersistentCacheBase(object):
+    cache_cls = None
+    kwargs = {}
 
     def is_jsonpickle(self):
         serializer = self.kwargs.get("serializer", None)
@@ -75,10 +74,13 @@ class TestPickling(unittest.TestCase):
         ):
             return True
 
+    def is_memory(self):
+        return self.kwargs.get("archive", "") == "memory:///"
+
     def get_test_resolver(self):
         using_json_pickle = self.is_jsonpickle()
+        using_memory = self.is_memory()
         archive = self.kwargs.get("archive", "")
-        using_memory = archive == "memory:///"
 
         if (
             issubclass(self.cache_cls, (StashCache, StashLRUCache))
@@ -98,6 +100,17 @@ class TestPickling(unittest.TestCase):
         resolver.cache = self.cache_cls(**self.kwargs)
 
         return resolver
+
+    def seed_cache(self, resolver):
+        seed_cache(resolver)
+
+
+class TestPickling(_TestPersistentCacheBase, unittest.TestCase):
+
+    cache_cls = PickableCache
+    kwargs = {"filename": os.path.abspath("dns.pickle")}
+    load_on_get = False
+    query_name = "github.com."
 
     def remove_cache(self, required=True):
         filename = self.kwargs.get("filename", None)
@@ -186,13 +199,13 @@ class TestPickling(unittest.TestCase):
         else:
             query = resolver.query
 
-        using_memory = self.kwargs.get("archive", "") == "memory:///"
+        using_memory = self.is_memory()
 
         assert len(resolver.cache.data) == 0
 
-        seed_cache(resolver)
+        self.seed_cache(resolver)
 
-        q1 = query("github.com.")
+        q1 = query(self.query_name)
         assert q1
 
         if using_memory:
@@ -210,10 +223,13 @@ class TestPickling(unittest.TestCase):
         else:
             query = resolver.query
 
-        assert len(resolver.cache.data) > 0
+        if not self.load_on_get:
+            assert len(resolver.cache.data) > 0
 
         with dnspython_resolver_socket_block():
-            q2 = query("github.com.")
+            q2 = query(self.query_name)
+
+        assert len(resolver.cache.data) > 0
 
         if DNSPYTHON_2 and isinstance(resolver.cache, (StashCache, StashLRUCache)):
             # The reponse and rrset have slightly different values, which

@@ -63,7 +63,7 @@ class _DeserializeOnGetCacheBase(object):
         *args,
         **kwargs
     ):
-        assert filename and deserializer
+        assert deserializer
         super(_DeserializeOnGetCacheBase, self).__init__(*args, **kwargs)
         self._filename = filename
         self._deserializer = deserializer

@@ -40,6 +40,7 @@ from dns_cache.resolver import (
 
 DEFAULT_NAMESERVER = "8.8.8.8"
 NAMESERVER = os.getenv("NAMESERVER", None)
+PORT = os.getenv("PORT", None)
 WINDOWS = sys.platform == "win32"
 PY2 = sys.version_info < (3, 0)
 
@@ -103,6 +104,9 @@ def get_test_resolver(cls=Resolver, nameserver=None, **kwargs):
             nameserver = DEFAULT_NAMESERVER
 
     resolver.nameservers = [nameserver]
+
+    if PORT:
+        resolver.nameserver_ports = {nameserver: PORT}
 
     override_system_resolver(resolver)
 

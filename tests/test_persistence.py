@@ -15,6 +15,7 @@ try:
 except ImportError:
     apsw = None
 
+from dns_cache.hosts import HostsCache
 from dns_cache.diskcache import DiskCache, DiskLRUCache
 from dns_cache.pickle import PickableCache, PickableCacheBase, PickableLRUCache
 from dns_cache.sqlitedict import SqliteDictCache, SqliteDictLRUCache
@@ -241,6 +242,12 @@ class TestPickling(_TestPersistentCacheBase, unittest.TestCase):
             q2.response = None
             q2.rrset = None
 
+        if isinstance(resolver.cache, HostsCache):
+            q1.expiration = None
+            q2.expiration = None
+
+            q1.response.id = q2.response.id
+
         compare_response(q1, q2)
 
         self.remove_cache()
@@ -250,6 +257,15 @@ class TestLRUPickling(TestPickling):
 
     cache_cls = PickableLRUCache
     kwargs = {"filename": os.path.abspath("dns-lru.pickle")}
+
+
+class TestHosts(TestPickling):
+
+    cache_cls = HostsCache
+    kwargs = {"filename": "/etc/hosts"}
+    query_name = "localhost."
+    load_on_get = True
+    seed_cache = lambda self, resolver: None
 
 
 class TestStashMemory(TestPickling):

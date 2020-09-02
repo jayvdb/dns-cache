@@ -44,10 +44,10 @@ def _convert_entries(entries, expiration=None):
     return out_data
 
 
-def loads(filename="/etc/hosts"):
+def loads(filename=None):
      hosts = Hosts(path=filename)
      hosts.populate_entries()
-     mtime = os.path.getmtime(filename)
+     mtime = os.path.getmtime(hosts.hosts_path)
      expiration = mtime + _year_in_seconds
      # print('file mtime', mtime, expiration)
      dnspython_data = _convert_entries(hosts.entries, expiration)

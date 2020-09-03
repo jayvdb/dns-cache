@@ -1,7 +1,6 @@
 import time
 
 from dns.exception import DNSException
-from dns.message import make_query, make_response
 from dns.name import from_text
 from dns.rdataclass import IN
 from dns.rdatatype import A
@@ -11,6 +10,7 @@ from dns.version import MAJOR as _MAJOR, MINOR as _MINOR
 import dns_cache.expiration
 
 from .block import dnspython_resolver_socket_block
+from .dnspython import create_answer
 
 try:
     from types import StringTypes
@@ -18,22 +18,6 @@ except ImportError:  # pragma: no cover
     StringTypes = tuple([str])
 
 DNSPYTHON_2 = (_MAJOR, _MINOR) >= (2, 0)
-
-try:
-    from dns.message import ANSWER
-except ImportError:  # pragma: no cover
-    ANSWER = 1
-
-try:  # pragma: no cover
-    from dns.rdataclass import RdataClass
-    from dns.rdatatype import RdataType
-except ImportError:  # pragma: no cover
-    class FakeMake():
-        @staticmethod
-        def make(text):
-            return text
-
-    RdataClass = RdataType = FakeMake
 
 
 def _get_dnspython_version():
@@ -91,15 +75,9 @@ class AggressiveCachingResolver(Resolver):
 
     def _inject(self, rrsets):
         for rrset in rrsets:
-            forged_query = make_query(rrset.name, rrset.rdtype, rrset.rdclass)
-            forged_response = make_response(forged_query)
-            forged_response.answer = rrsets
-            forged_response.index = {(ANSWER, rrset.name, rrset.rdclass, rrset.rdtype, 0, None): rrset}
-            forged_response.find_rrset(
-                forged_response.answer, rrset.name, rdclass=rrset.rdclass, rdtype=rrset.rdtype)
-            rdtype = RdataType.make(rrset.rdtype)
-            rdclass = RdataClass.make(rrset.rdclass)
-            forged_answer = Answer(rrset.name, rrset.rdtype, rrset.rdclass, forged_response)
+            forged_answer = create_answer(rrset.name, rrset)
+            rdtype = forged_answer.rdtype
+            rdclass = forged_answer.rdclass
             if (rrset.name, rdtype, rdclass) not in self.cache.data:
                 self.cache.put(
                     (rrset.name, rdtype, rdclass),

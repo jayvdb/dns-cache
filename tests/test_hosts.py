@@ -42,10 +42,10 @@ class TestHostsCache(unittest.TestCase):
 
         q1 = query(name)
 
-        assert len(resolver.cache._cache1.data) >= 1
+        assert len(resolver.cache._read_only_cache.data) >= 1
         # The layering does a put, which pushes localhost into cache2
         # TODO this needs to be blocked
-        assert len(resolver.cache._cache2.data) == 1
+        assert len(resolver.cache._writable_cache.data) == 1
 
         assert q1
 

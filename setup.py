@@ -36,6 +36,7 @@ setup(
     install_requires=[
         "dnspython",
         "ProxyTypes",
+        "reconfigure",
     ],
     classifiers=classifiers.splitlines(),
 )

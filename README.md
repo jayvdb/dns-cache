@@ -61,9 +61,10 @@ The following classes can be used separately or together.
    but reducing the number of requests and cached responses when several related records are requested, such as a HTTP redirect
    from www.foo.com to foo.com (or vis versa) where one is a CNAME point to the other.
 2. `dns_cache.resolver.ExceptionCachingResolver`: caches lookup failures.
+3. `dns_cache.hosts.HostsCache`: preloads hosts (e.g. `/etc/hosts`) into a cache
 
 **Note:** `dns_cache.override_system_resolver()` can be used to install a custom `resolver` or `cache`, which may
-be derived from the above classes or your own implementation from scratch.
+be derived from the above classes or your own implementation from scratch.  It preloads `/etc/hosts`.
 
 ## Similar projects
 
